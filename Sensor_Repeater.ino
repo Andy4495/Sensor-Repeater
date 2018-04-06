@@ -12,9 +12,7 @@
 #define RADIO_ENABLED
 //#define
 
-// Normally, the repeater code sends the Garage data whenever it receives weather data
-// In case no weather data is received, define a time that garage data will be sent
-// even without weather data
+// Time between Garage Sensor transmissions
 #define GARAGE_MAX_TX_DELAY  (1000UL * 60UL * 3UL)
 
 #if defined(__MSP430FR4133__)
@@ -147,6 +145,7 @@ MspVcc  myVcc;
 long           msp430T;
 unsigned long  msp430mV;
 int loopCount = 0;
+int messageReceived = 0;
 
 unsigned int    last_BME280_P = 0;     // Pressure in inches of Hg * 100
 
@@ -266,9 +265,8 @@ void loop() {
       case (ADDRESS_WEATHER):
         if (crcFailed == 0) {
           process_weatherdata();
-          sleep(5000);             // Give the Rx Hub time to process the weather data
+          messageReceived = 1;     // Flag to display Antenna symbol on LCD
         }
-        process_localdata();
         break;
       case (ADDRESS_G2):
       case (ADDRESS_SENSOR4):
@@ -299,7 +297,7 @@ void loop() {
     Serial.print(F("Nothing received: "));
     Serial.println(millis());
 #endif
-    // If we haven't gotten any weather data in a while, then send the garage data anyway
+    // Check if time to send garage sensosr data
     if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY) process_localdata();
 #ifdef ZX_SENSOR_ENABLED
     myZX.read1bFromRegister(ZPOS_REG, &z_pos);
@@ -308,6 +306,7 @@ void loop() {
 #endif
 #ifdef LCD_ENABLED
     display_on_LCD();
+    messageReceived = 0;   // Clear the flag so LCD antenna only stays on for one display cycle
     if (current_display == ADDRESS_WEATHER) current_display = ADDRESS_REPEATER;
     else current_display = ADDRESS_WEATHER;
 #endif
@@ -438,6 +437,7 @@ void display_on_LCD() {
     default:
       break;
   }
+  myLCD.showSymbol(LCD_SEG_RADIO, messageReceived);
 }
 #endif
 
