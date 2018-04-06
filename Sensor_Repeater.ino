@@ -1,7 +1,7 @@
 // Sensor Repeater with CC110L
 // 1.0.0  03/10/2018  A.T.     Original
 // 1.1.0  04/05/2018  A.T.     Add support for external OLED display
-//
+// 1.2.0  04/06/2018  A.T.     Add support for averaging on-chip Temp and Vcc measurements
 
 
 #include <SPI.h>
@@ -142,8 +142,6 @@ struct sPacket Packet;
 int crcFailed = 0; // 1 is bad CRC, 0 is good CRC
 MspTemp myTemp;
 MspVcc  myVcc;
-long           msp430T;
-unsigned long  msp430mV;
 int loopCount = 0;
 int messageReceived = 0;
 
@@ -158,6 +156,16 @@ unsigned long   prevGarageMillis = 0;        // Last time Garage sensor transmit
 unsigned long   prevWeatherMillis = 0;       // Last time Weather sensor transmitted data
 
 int current_display = ADDRESS_REPEATER;
+
+// Averaging on-chip readings
+#define NUMBER_OF_SAMPLES 10
+int samplesTaken = 0;
+int currentSample = 0;
+int mspTsamples[NUMBER_OF_SAMPLES];
+int mspTavg;
+unsigned int mspmVsamples[NUMBER_OF_SAMPLES];
+unsigned long mspmVavg;
+
 
 void setup() {
 #ifdef RADIO_ENABLED
@@ -384,9 +392,27 @@ void process_weatherdata() {
 void process_localdata() {
   myTemp.read(CAL_ONLY);
   myVcc.read(CAL_ONLY);
-  Packet.sensordata.MSP_T = myTemp.getTempCalibratedF();
+
+  // Calculate averages for Temp and mV
+  mspTsamples[currentSample] = myTemp.getTempCalibratedF();
+  mspmVsamples[currentSample] = myVcc.getVccCalibrated();
+  currentSample++;
+  if (currentSample >= NUMBER_OF_SAMPLES) currentSample = 0;
+  samplesTaken++;
+  if (samplesTaken > NUMBER_OF_SAMPLES) samplesTaken = NUMBER_OF_SAMPLES;
+  mspTavg = 0;
+  mspmVavg = 0;
+  for (int i = 0; i < samplesTaken; i++) {
+    mspTavg += mspTsamples[i];
+    mspmVavg += mspmVsamples[i];
+  }
+  mspTavg = mspTavg / samplesTaken;
+  mspmVavg = mspmVavg / samplesTaken;
+
+  Packet.sensordata.MSP_T = mspTavg;
   last_garage_T = Packet.sensordata.MSP_T;
-  Packet.sensordata.Batt_mV = myVcc.getVccCalibrated();
+  Packet.sensordata.Batt_mV = mspmVavg;
+
   Packet.sensordata.Loops = loopCount;
   Packet.sensordata.Millis = millis();
 #ifdef ZX_SENSOR_ENABLED
