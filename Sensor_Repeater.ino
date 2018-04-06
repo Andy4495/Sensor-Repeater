@@ -213,7 +213,7 @@ void setup() {
   myLCD.displayText(F("RX ON "));
 #endif
 
-delay(1000);   // Pause for the status messages and displays
+  delay(1000);   // Pause for the status messages and displays
 
 #ifndef LED_DISABLED
   digitalWrite(BOARD_LED, LOW);
@@ -502,8 +502,8 @@ void buildStatusString() {
   if (lastminutes > 99) lastminutes = 99;
 
 
-  snprintf((char*)oled_text[0], OLED_COLS + 1, "To=%4d, Tg=%4d", (last_TMP107_Ti +5) / 10, (last_garage_T + 5) / 10);
-  snprintf((char*)oled_text[1], OLED_COLS + 1, "P=%3d,H=%2d,dt=%2d", last_BME280_P / 10, last_BME280_H / 10, lastminutes);
+  snprintf((char*)oled_text[0], OLED_COLS + 1, "To=%4d, Tg=%4d", (last_TMP107_Ti + 5) / 10, (last_garage_T + 5) / 10);
+  snprintf((char*)oled_text[1], OLED_COLS + 1, "P=%3d,H=%2d,dt=%2d", (last_BME280_P + 5) / 10, (last_BME280_H + 5) / 10, lastminutes);
   oled_text[1][11] = 0x15;   // Replace 'd' with delta character (from ROM C character set)
 
 #ifdef SERIAL_ENABLED
