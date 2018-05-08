@@ -12,7 +12,7 @@ Since the repeater station is mounted in my garage, I also added some  monitorin
 - Garage door open/closed states (using a SparkFun [ZX Sensor][3])
 - Vcc (battery level)
 
-The repeater station also supports an external OLED display which is used to display various sensor readings from both the outdoor weather sensor and the garage sensors on the repeater station.
+The repeater station also supports an external OLED display which is used to display the number of valid (no CRC errors) and invalid (CRC error) messages received, along with the last RSSI and LQI values and time since last message received. This information can be useful in determining if the outdoor weather sensor is placed in a location where its transmissions can be received by the repeater. 
 
 In my implementation, the sketch is installed on an MSP430FR4133 LaunchPad.  On the FR4133, SPI and I2C share the same pins. Since the CC110L uses SPI communication and the ZX Sensor uses I2C, there is a pin conflict if both sensors try to use the built-in hardware communication.  The sketch therefore uses my [software I2C library][6] to communicate with the ZX Sensor.
 

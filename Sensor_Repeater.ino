@@ -5,11 +5,13 @@
 // 1.0.0  03/10/2018  A.T.     Original
 // 1.1.0  04/05/2018  A.T.     Add support for external OLED display
 // 1.2.0  04/06/2018  A.T.     Add support for averaging on-chip Temp and Vcc measurements
+// 1.3.0  05/08/2018  A.T.     Change OLED info to include RSSI, LQI, # valid messages and CRC errors
 
 
 #include <SPI.h>
 #include <AIR430BoostFCC.h>
 #include "MspTandV.h"
+
 #define ZX_SENSOR_ENABLED
 #define OLED_ENABLED
 #define RADIO_ENABLED
@@ -147,6 +149,8 @@ MspTemp myTemp;
 MspVcc  myVcc;
 int loopCount = 0;
 int messageReceived = 0;
+int lastRSSI = 0, lastLQI = 0;
+long totalValid = 0, totalCRC = 0;
 
 unsigned int    last_BME280_P = 0;     // Pressure in inches of Hg * 100
 
@@ -254,23 +258,31 @@ void loop() {
 #endif
 
   if (packetSize > 0) {
+    lastRSSI = Radio.getRssi();
+    lastLQI = Radio.getLqi();
 #ifndef LED_DISABLED
     digitalWrite(BOARD_LED, HIGH);
 #endif
+#ifdef SERIAL_ENABLED
     Serial.print(F("RX from: "));
     Serial.print(Packet.from);
     Serial.print(F(", bytes: "));
     Serial.println(packetSize);
     Serial.print(F("RSSI: "));
-    Serial.println(Radio.getRssi());
+    Serial.println(lastRSSI);
     Serial.print(F("LQI: "));
-    Serial.println(Radio.getLqi());
+    Serial.println(lastLQI);
+#endif
     if (Radio.getCrcBit() == 0) {
+      totalCRC++;
       crcFailed = 1;
 #ifdef SERIAL_ENABLED
       Serial.println(F("*** CRC check failed! ***"));
 #endif
-    } else crcFailed = 0;
+    } else {
+      totalValid++;
+      crcFailed = 0;
+    }
 
     switch (Packet.from) {
       case (ADDRESS_WEATHER):
@@ -530,9 +542,16 @@ void buildStatusString() {
   lastminutes = (millis() - prevWeatherMillis) / 1000 / 60;
   if (lastminutes > 99) lastminutes = 99;
 
-
-  snprintf((char*)oled_text[0], OLED_COLS + 1, "To=%4d, Tg=%4d", (last_TMP107_Ti + 5) / 10, (last_garage_T + 5) / 10);
-  snprintf((char*)oled_text[1], OLED_COLS + 1, "P=%3d,H=%2d,dt=%2d", (last_BME280_P + 5) / 10, (last_BME280_H + 5) / 10, lastminutes);
+  // Row 0: +xxxxxxx,-xxxxxx
+  // Row 1: SS-xxx,Qxx,dt:xx
+  // "+" = Valid messages received, "-" = CRC errors received
+  // "SS" = RSSI (Signal Strength), "Q"=LQI (Quality), "dt" = minutes since last message received (delta time)
+  if (lastRSSI < -999) lastRSSI = -999;
+  if (lastRSSI > 0) lastRSSI = 0;
+  if (lastLQI > 99) lastLQI = 99;
+  if (lastLQI < 0) lastLQI = 0;
+  snprintf((char*)oled_text[0], OLED_COLS + 1, "+%7ld,-%6ld", totalValid, totalCRC);
+  snprintf((char*)oled_text[1], OLED_COLS + 1, "SS-%3d,Q%2d,dt:%2d", -lastRSSI, lastLQI, lastminutes);
   oled_text[1][11] = 0x15;   // Replace 'd' with delta character (from ROM C character set)
 
 #ifdef SERIAL_ENABLED
