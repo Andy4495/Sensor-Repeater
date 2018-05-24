@@ -12,7 +12,9 @@ Since the repeater station is mounted in my garage, I also added some  monitorin
 - Garage door open/closed states (using a SparkFun [ZX Sensor][3])
 - Vcc (battery level)
 
-The repeater station also supports an external OLED display which is used to display the number of valid (no CRC errors) and invalid (CRC error) messages received, along with the last RSSI and LQI values and time since last message received. This information can be useful in determining if the outdoor weather sensor is placed in a location where its transmissions can be received by the repeater. 
+The repeater station supports an external OLED display using my [NewhavenOLED library][5] which is used to display the number of valid (no CRC errors) and invalid (CRC error) messages received, along with the last RSSI and LQI values and time since last message received. This information can be useful in determining if the outdoor weather sensor is placed in a location where its transmissions can be received by the repeater.
+
+The repeater station also supports an external 2-digit seven segment LED to display the last outdoor temperature reading received from the outdoor weather sensor. It uses my [LED744511 library][9].
 
 In my implementation, the sketch is installed on an MSP430FR4133 LaunchPad.  On the FR4133, SPI and I2C share the same pins. Since the CC110L uses SPI communication and the ZX Sensor uses I2C, there is a pin conflict if both sensors try to use the built-in hardware communication.  The sketch therefore uses my [software I2C library][6] to communicate with the ZX Sensor.
 
@@ -33,6 +35,7 @@ References
 + [MSPTandV][4] library
 + [NewhavenOLED][5] library
 + [SWI2C][6] library
++ [LED744511][9] library
 + CC110L [BoosterPack][8]
 
 [1]: https://gitlab.com/Andy4495/Outdoor-Weather-Sensor
@@ -43,3 +46,4 @@ References
 [6]: https://gitlab.com/Andy4495/NewhavenOLED
 [7]: https://www.sparkfun.com/products/13162
 [8]: http://www.ti.com/tool/430BOOST-CC110L
+[9]: https://gitlab.com/Andy4495/LED744511

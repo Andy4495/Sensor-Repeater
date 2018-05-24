@@ -6,6 +6,7 @@
 // 1.1.0  04/05/2018  A.T.     Add support for external OLED display
 // 1.2.0  04/06/2018  A.T.     Add support for averaging on-chip Temp and Vcc measurements
 // 1.3.0  05/08/2018  A.T.     Change OLED info to include RSSI, LQI, # valid messages and CRC errors
+// 1.4.0  05/23/2018  A.T.     Add support for 2-digit 7-segment LED, using LED744511 library with 74HC164 serial interface
 
 
 #include <SPI.h>
@@ -15,7 +16,7 @@
 #define ZX_SENSOR_ENABLED
 #define OLED_ENABLED
 #define RADIO_ENABLED
-//#define
+#define LED_7SEG_ENABLED
 
 // Time between Garage Sensor transmissions
 #define GARAGE_MAX_TX_DELAY  (1000UL * 60UL * 3UL)
@@ -52,6 +53,18 @@
 #define PUSHBUTTON PUSH2
 #endif
 
+#ifdef LED_7SEG_ENABLED
+#include "LED744511.h"
+#define LED_MSB_LE  5
+#define LED_LSB_LE  6
+#define LED_MSB_DP  8
+#define LED_LSB_DP 17
+// Next two pins are shared with OLED. This works because they
+// have separate chip select pins.
+#define LED_SCK    13   // Shared with OLED SCK
+#define LED_DIN    12   // Shared with OLED SDIN
+LED744511_Serial myLED(LED_SCK, LED_DIN, LED_MSB_LE, LED_LSB_LE);
+#endif
 
 #ifdef LCD_ENABLED
 #include "LCD_Launchpad.h"
@@ -188,6 +201,11 @@ void setup() {
 #ifndef LED_DISABLED
   pinMode(BOARD_LED, OUTPUT);       // Flash LED to indicate ready to receive
   digitalWrite(BOARD_LED, HIGH);
+#endif
+
+#ifdef LED_7SEG_ENABLED
+  pinMode(LED_MSB_DP, OUTPUT);
+  pinMode(LED_LSB_DP, OUTPUT);
 #endif
 
 #ifdef OLED_ENABLED
@@ -402,6 +420,9 @@ void process_weatherdata() {
   last_BME280_H = Packet.weatherdata.BME280_H;
   last_TMP107_Ti = Packet.weatherdata.TMP107_Ti;
   last_weather_mV = Packet.weatherdata.Batt_mV;
+#ifdef LED_7SEG_ENABLED
+  displayOnLED(last_TMP107_Ti);
+#endif
 }
 
 void process_localdata() {
@@ -592,3 +613,33 @@ void displayTempOnLCD(int temp) {
   myLCD.showSymbol(LCD_SEG_MINUS1, tempSign);
 }
 #endif
+
+#ifdef LED_7SEG_ENABLED
+void displayOnLED(int value) {
+  // Negative values -- turn on DP on right (LSB) digit
+  if (value < 0) {
+    digitalWrite(LED_MSB_DP, LOW);
+    digitalWrite(LED_LSB_DP, HIGH);
+    if (value < -99) value = -99; // Limit to 2 digits
+    myLED.writeBCD(-value);
+  }
+  // Values 100 and above -- turn on both DPs
+  else if (value > 99) {
+    digitalWrite(LED_MSB_DP, HIGH);
+    digitalWrite(LED_LSB_DP, HIGH);
+    if (value > 199) value = 199; // Limit to 2 digits (100 is subtracted below)
+    // For 100 - 109, want to print leading zero, so don't adjust
+    // For > 109, then need to subtract 100 in order to suppress leading zero
+    // See LED744511 library documentation for details
+    if (value > 109) value -= 100;
+    myLED.writeBCD(value);
+  }
+  else // Values from 0 - 99 -- no adjustment, no DPs
+  {
+    digitalWrite(LED_MSB_DP, LOW);
+    digitalWrite(LED_LSB_DP, LOW);
+    myLED.writeBCD(value);
+  }
+}
+#endif
+
