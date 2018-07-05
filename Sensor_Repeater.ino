@@ -7,12 +7,38 @@
 // 1.2.0  04/06/2018  A.T.     Add support for averaging on-chip Temp and Vcc measurements
 // 1.3.0  05/08/2018  A.T.     Change OLED info to include RSSI, LQI, # valid messages and CRC errors
 // 1.4.0  05/23/2018  A.T.     Add support for 2-digit 7-segment LED, using LED744511 library with 74HC164 serial interface
+// 1.5.0  06/26/2018  A.T.     Update 7-segment: use 74HC164 to control DPs and button to enable/disable
+//                             Note that 7-segment pin I/O changed
 
+
+/* Pin Summary
+  1 - 3V3             (LaunchPad)
+  2 - GDO2            (CC110L)
+  3 - RX              (G2, FR2433)
+  4 - TX              (G2, FR2433)
+  5 - PUSH2           (G2553)
+  6 - LED_LSB_LE      (7SEG)
+  7 - SPI SCK         (CC110L)
+  8 - LED_MSB_LE      (7SEG)        // Also PUSH2 on FR2433, but unused
+  9 - SWI2C SCL       (ZX)
+  10 - SWI2C SDA      (ZX)
+  11 - CS             (OLED)
+  12 - SWSPI MOSI/SDA (7SEG, OLED)
+  13 - SWSPI SCK      (7SEG, OLED)
+  14 - SPI MISO       (CC110L)
+  15 - SPI MOSI       (CC110L)
+  16 - RESET          (LaunchPad)
+  17 - LED_BL         (7SEG)
+  18 - CS             (CC110L)
+  19 - GDO0           (CC110L)
+  20 - GND            (LaunchPad)
+*/
 
 #include <SPI.h>
 #include <AIR430BoostFCC.h>
 #include "MspTandV.h"
 
+//#define SERIAL_ENABLED        Disable serial to save program memory
 #define ZX_SENSOR_ENABLED
 #define OLED_ENABLED
 #define RADIO_ENABLED
@@ -25,45 +51,50 @@
 #define LCD_ENABLED
 #define BOARD_LED LED2
 #define PUSHBUTTON PUSH2
+#define BUTTON7SEG PUSH1
 #endif
 
 #if defined(__MSP430FR6989__)
 #define LCD_ENABLED
 #define BOARD_LED GREEN_LED
 #define PUSHBUTTON PUSH2
+#define BUTTON7SEG PUSH1
 #endif
 
 #if defined(__MSP430G2553__)
 #define LED_DISABLED         // LEDs conflict with CC110L pins
 #define PUSHBUTTON PUSH2     // Uses Pin 5, only button available
+#define BUTTON7SEG PUSH2     // Use same button for both functions. 
 #endif
 
 #if defined(__MSP430F5529__)
 #define BOARD_LED GREEN_LED
 #define PUSHBUTTON PUSH2
+#define BUTTON7SEG PUSH1
 #endif
 
 #if defined(__MSP430FR2433__)
-#define BOARD_LED LED2
-#define PUSHBUTTON PUSH1
+#define LED_DISABLED         // LEDs conflict with CC110L pins
+#define PUSHBUTTON PUSH1     // Both functions are on PUSH1, so pressing PUSH1 will also momentarily turn on OLED
+#define BUTTON7SEG PUSH1
 #endif
 
 #if defined(__MSP430FR5969__)
 #define BOARD_LED LED2
 #define PUSHBUTTON PUSH2
+#define BUTTON7SEG PUSH1
 #endif
 
 #ifdef LED_7SEG_ENABLED
 #include "LED744511.h"
-#define LED_MSB_LE  5
-#define LED_LSB_LE  6
-#define LED_MSB_DP  8
-#define LED_LSB_DP 17
+#define LED_MSB_LE   8
+#define LED_LSB_LE   6
+#define LED_BL      17
 // Next two pins are shared with OLED. This works because they
 // have separate chip select pins.
 #define LED_SCK    13   // Shared with OLED SCK
 #define LED_DIN    12   // Shared with OLED SDIN
-LED744511_Serial myLED(LED_SCK, LED_DIN, LED_MSB_LE, LED_LSB_LE);
+LED744511_Serial myLED(LED_SCK, LED_DIN, LED_MSB_LE, LED_LSB_LE, LED744511_Serial::NO_PIN, LED744511_Serial::NO_PIN, LED_BL );
 #endif
 
 #ifdef LCD_ENABLED
@@ -164,6 +195,7 @@ int loopCount = 0;
 int messageReceived = 0;
 int lastRSSI = 0, lastLQI = 0;
 long totalValid = 0, totalCRC = 0;
+int  sevenSegEnabled = 0;
 
 unsigned int    last_BME280_P = 0;     // Pressure in inches of Hg * 100
 
@@ -194,9 +226,11 @@ void setup() {
   pinMode(CC110L_CS, OUTPUT);
 #endif
 
+#ifdef SERIAL_ENABLED
   // Setup serial for status printing.
   Serial.begin(9600);
   Serial.println(F("Repeater"));
+#endif
 
 #ifndef LED_DISABLED
   pinMode(BOARD_LED, OUTPUT);       // Flash LED to indicate ready to receive
@@ -204,8 +238,8 @@ void setup() {
 #endif
 
 #ifdef LED_7SEG_ENABLED
-  pinMode(LED_MSB_DP, OUTPUT);
-  pinMode(LED_LSB_DP, OUTPUT);
+  pinMode(BUTTON7SEG, INPUT_PULLUP);
+  myLED.blankDisplay(LOW);
 #endif
 
 #ifdef OLED_ENABLED
@@ -342,8 +376,10 @@ void loop() {
     if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY) process_localdata();
 #ifdef ZX_SENSOR_ENABLED
     myZX.read1bFromRegister(ZPOS_REG, &z_pos);
+#ifdef SERIAL_ENABLED
     Serial.print("Door: ");
     Serial.println(z_pos);
+#endif
 #endif
 #ifdef LCD_ENABLED
     display_on_LCD();
@@ -355,6 +391,28 @@ void loop() {
     showStatusOnOled();
 #endif
   }
+#ifdef LED_7SEG_ENABLED
+  if (digitalRead(BUTTON7SEG) == LOW) {
+    sevenSegEnabled = ~sevenSegEnabled;
+    if (sevenSegEnabled)
+    {
+      myLED.blankDisplay(HIGH);
+      displayOnLED((last_TMP107_Ti + 5) / 10);
+    }
+    else
+    {
+      myLED.blankDisplay(LOW);
+      myLED.setDP(LOW, LOW);      // Clear the decimal points if necessary
+      myLED.writeBCD(-1);         // Update the decimal points
+    }
+#ifdef LCD_ENABLED
+    myLCD.clear();
+    myLCD.showSymbol(LCD_SEG_DOT3, 1);
+    if (sevenSegEnabled) myLCD.displayText("LEDON", 0);
+    else myLCD.displayText("LEDOFF", 0);
+#endif
+  }
+#endif
 }
 
 void process_weatherdata() {
@@ -421,7 +479,9 @@ void process_weatherdata() {
   last_TMP107_Ti = Packet.weatherdata.TMP107_Ti;
   last_weather_mV = Packet.weatherdata.Batt_mV;
 #ifdef LED_7SEG_ENABLED
-  displayOnLED(last_TMP107_Ti);
+  if (sevenSegEnabled) {
+    displayOnLED((last_TMP107_Ti + 5) / 10);
+  }
 #endif
 }
 
@@ -509,8 +569,8 @@ void displayBattOnLCD(int mV) {
   if (mV > 3000) myLCD.showSymbol(LCD_SEG_BAT4, 1);
   if (mV > 2800) myLCD.showSymbol(LCD_SEG_BAT3, 1);
   if (mV > 2600) myLCD.showSymbol(LCD_SEG_BAT2, 1);
-  if (mV > 2400) myLCD.showSymbol(LCD_SEG_BAT1, 1);
-  if (mV > 2200) myLCD.showSymbol(LCD_SEG_BAT0, 1);
+  if (mV > 2500) myLCD.showSymbol(LCD_SEG_BAT1, 1);
+  if (mV > 2400) myLCD.showSymbol(LCD_SEG_BAT0, 1);
   myLCD.showSymbol(LCD_SEG_BAT_ENDS, 1);
   myLCD.showSymbol(LCD_SEG_BAT_POL, 1);
 }
@@ -528,11 +588,31 @@ void showStatusOnOled() {
       oled.command(0x0C);         // Turn on display
       oledDisplay();
       oledStatus = 2;             // Display-is-on state
+#ifdef LED_7SEG_ENABLED           // Clean up decimal points since CLK/DATA lines shared
+      if (sevenSegEnabled) {
+        displayOnLED((last_TMP107_Ti + 5) / 10);
+      }
+      else
+      {
+        myLED.setDP(LOW, LOW);      // Clear the decimal points if necessary
+        myLED.writeBCD(-1);         // Update the decimal points
+      }
+#endif
       break;
     case 2:
       if ((millis() - oledStartTime) > OLED_ON_TIME) {
         oled.command(0x08);         // Turns off OLED
         oledStatus = 0;             // Display is off state
+#ifdef LED_7SEG_ENABLED             // Clean up decimal points since CLK/DATA lines shared
+        if (sevenSegEnabled) {
+          displayOnLED((last_TMP107_Ti + 5) / 10);
+        }
+        else
+        {
+          myLED.setDP(LOW, LOW);    // Clear the decimal points if necessary
+          myLED.writeBCD(-1);       // Update the decimal points
+        }
+#endif
       }
       break;
     default:
@@ -618,26 +698,20 @@ void displayTempOnLCD(int temp) {
 void displayOnLED(int value) {
   // Negative values -- turn on DP on right (LSB) digit
   if (value < 0) {
-    digitalWrite(LED_MSB_DP, LOW);
-    digitalWrite(LED_LSB_DP, HIGH);
+    myLED.setDP(0, 1);
     if (value < -99) value = -99; // Limit to 2 digits
     myLED.writeBCD(-value);
   }
   // Values 100 and above -- turn on both DPs
   else if (value > 99) {
-    digitalWrite(LED_MSB_DP, HIGH);
-    digitalWrite(LED_LSB_DP, HIGH);
-    if (value > 199) value = 199; // Limit to 2 digits (100 is subtracted below)
-    // For 100 - 109, want to print leading zero, so don't adjust
-    // For > 109, then need to subtract 100 in order to suppress leading zero
-    // See LED744511 library documentation for details
-    if (value > 109) value -= 100;
+    myLED.setDP(1, 1);
+    // Note that library displays a leading zero for values from 100 - 109
+    // and automatically truncates to 2 digits if value > 99
     myLED.writeBCD(value);
   }
-  else // Values from 0 - 99 -- no adjustment, no DPs
+  else // Values from 0 - 99 -- no DPs
   {
-    digitalWrite(LED_MSB_DP, LOW);
-    digitalWrite(LED_LSB_DP, LOW);
+    myLED.setDP(0, 0);
     myLED.writeBCD(value);
   }
 }
