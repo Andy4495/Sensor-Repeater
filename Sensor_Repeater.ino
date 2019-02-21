@@ -9,6 +9,8 @@
 // 1.4.0  05/23/2018  A.T.     Add support for 2-digit 7-segment LED, using LED744511 library with 74HC164 serial interface
 // 1.5.0  06/26/2018  A.T.     Update 7-segment: use 74HC164 to control DPs and button to enable/disable
 //                             Note that 7-segment pin I/O changed
+// 1.6.0  11/27/2018  A.T.     Default 7-segment LED ON after reset
+// 1.7.0  02/21/2018  A.T.     Send a message any time door status changes, instead of just at 5 minute intervals.
 
 
 /* Pin Summary
@@ -38,7 +40,8 @@
 #include <AIR430BoostFCC.h>
 #include "MspTandV.h"
 
-//#define SERIAL_ENABLED        Disable serial to save program memory
+///
+///#define SERIAL_ENABLED        Disable serial to save program memory
 #define ZX_SENSOR_ENABLED
 #define OLED_ENABLED
 #define RADIO_ENABLED
@@ -127,9 +130,10 @@ int oledStatus = 0;
 #define SDA_PIN 10
 const uint8_t ZX_ADDR = 0x10;  // ZX Sensor I2C address
 const uint8_t ZPOS_REG = 0x0A;
-uint8_t z_pos;
+uint8_t z_pos = 0, prev_z_pos = 0;
 SWI2C myZX = SWI2C(SDA_PIN, SCL_PIN, ZX_ADDR);
 #endif
+#define Z_POS_DIFF_THRESHOLD 30
 
 #define CC110L_CS  18
 #define RF_GDO0    19
@@ -195,7 +199,7 @@ int loopCount = 0;
 int messageReceived = 0;
 int lastRSSI = 0, lastLQI = 0;
 long totalValid = 0, totalCRC = 0;
-int  sevenSegEnabled = 0;
+int  sevenSegEnabled = ~0;           // Enabled by default
 
 unsigned int    last_BME280_P = 0;     // Pressure in inches of Hg * 100
 
@@ -239,7 +243,13 @@ void setup() {
 
 #ifdef LED_7SEG_ENABLED
   pinMode(BUTTON7SEG, INPUT_PULLUP);
-  myLED.blankDisplay(LOW);
+  if (sevenSegEnabled)
+  {
+    myLED.blankDisplay(HIGH);
+    displayOnLED(0);
+  }
+  else
+    myLED.blankDisplay(LOW);
 #endif
 
 #ifdef OLED_ENABLED
@@ -373,13 +383,18 @@ void loop() {
     Serial.println(millis());
 #endif
     // Check if time to send garage sensosr data
-    if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY) process_localdata();
 #ifdef ZX_SENSOR_ENABLED
     myZX.read1bFromRegister(ZPOS_REG, &z_pos);
+#endif 
+    if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY  ||
+         abs( (z_pos - prev_z_pos) > Z_POS_DIFF_THRESHOLD) )
+    {
+      prev_z_pos = z_pos;
+      process_localdata();
+    }
 #ifdef SERIAL_ENABLED
     Serial.print("Door: ");
     Serial.println(z_pos);
-#endif
 #endif
 #ifdef LCD_ENABLED
     display_on_LCD();
@@ -393,6 +408,7 @@ void loop() {
   }
 #ifdef LED_7SEG_ENABLED
   if (digitalRead(BUTTON7SEG) == LOW) {
+    myLCD.clear();
     sevenSegEnabled = ~sevenSegEnabled;
     if (sevenSegEnabled)
     {
@@ -511,10 +527,7 @@ void process_localdata() {
 
   Packet.sensordata.Loops = loopCount;
   Packet.sensordata.Millis = millis();
-#ifdef ZX_SENSOR_ENABLED
-  myZX.read1bFromRegister(ZPOS_REG, &z_pos);
   Packet.sensordata.Door_Sensor = z_pos;
-#endif
   Packet.from = ADDRESS_REPEATER;
 
 #ifdef RADIO_ENABLED
@@ -548,12 +561,10 @@ void display_on_LCD() {
   switch (current_display) {
     case ADDRESS_REPEATER:
       displayTempOnLCD(last_garage_T);
-      myLCD.showSymbol(LCD_SEG_CLOCK, true);
       myLCD.showSymbol(LCD_SEG_HEART, true);
       break;
     case ADDRESS_WEATHER:
       displayTempOnLCD(last_TMP107_Ti);
-      myLCD.showSymbol(LCD_SEG_CLOCK, true);
       displayBattOnLCD(last_weather_mV);
       break;
     default:
@@ -716,4 +727,3 @@ void displayOnLED(int value) {
   }
 }
 #endif
-
