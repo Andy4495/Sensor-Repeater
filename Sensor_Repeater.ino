@@ -10,7 +10,12 @@
 // 1.5.0  06/26/2018  A.T.     Update 7-segment: use 74HC164 to control DPs and button to enable/disable
 //                             Note that 7-segment pin I/O changed
 // 1.6.0  11/27/2018  A.T.     Default 7-segment LED ON after reset
-// 1.7.0  02/21/2018  A.T.     Send a message any time door status changes, instead of just at 5 minute intervals.
+// 1.7.0  02/21/2019  A.T.     Send a message any time door status changes, instead of just at 5 minute intervals.
+// 1.8.0  02/21/2019  A.T.     Split ZX sensor change from previous message timer into separate states.
+//                             That is, sensor packet will be sent out every GARAGE_MAX_TX_DELAY milliseconds
+//                             regardless of whether a separate door status message went out.
+//                             Also fix ZX difference calculation since it is unsigned value.
+
 
 
 /* Pin Summary
@@ -385,12 +390,28 @@ void loop() {
     // Check if time to send garage sensosr data
 #ifdef ZX_SENSOR_ENABLED
     myZX.read1bFromRegister(ZPOS_REG, &z_pos);
-#endif 
-    if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY  ||
-         abs( (z_pos - prev_z_pos) > Z_POS_DIFF_THRESHOLD) )
-    {
+#endif
+    // First see if we are due for a regular update
+    if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY ) {
       prev_z_pos = z_pos;
       process_localdata();
+      prevGarageMillis = millis();
+    } 
+    // Next, check if the ZX sensor value changed more than the threshold since the last update
+    else 
+    {
+      // Unsigned data, so need to check which one is larger before subtracting
+      if (z_pos >= prev_z_pos) { 
+        if ( (z_pos - prev_z_pos) > Z_POS_DIFF_THRESHOLD ) {
+          prev_z_pos = z_pos;
+          process_localdata();
+        }
+      } else { // prev_z_pos is larger
+        if ( (prev_z_pos - z_pos) > Z_POS_DIFF_THRESHOLD ) {
+          prev_z_pos = z_pos;
+          process_localdata();
+        }
+      }
     }
 #ifdef SERIAL_ENABLED
     Serial.print("Door: ");
@@ -541,7 +562,6 @@ void process_localdata() {
   digitalWrite(CC110L_CS, HIGH);
   pinMode(CC110L_CS, OUTPUT);    // Need to pull radio CS high to keep it off the SPI bus
 #endif
-  prevGarageMillis = millis();
 
 #ifdef SERIAL_ENABLED
   Serial.print("Local temp: ");
