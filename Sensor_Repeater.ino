@@ -1,6 +1,6 @@
 // Sensor Repeater with CC110L
 //
-//  https://gitlab.com/Andy4495/Sensor-Repeater
+//  https://github.com/Andy4495/Sensor-Repeater
 //
 // 1.0.0  03/10/2018  A.T.     Original
 // 1.1.0  04/05/2018  A.T.     Add support for external OLED display
@@ -72,7 +72,7 @@
 #if defined(__MSP430G2553__)
 #define LED_DISABLED         // LEDs conflict with CC110L pins
 #define PUSHBUTTON PUSH2     // Uses Pin 5, only button available
-#define BUTTON7SEG PUSH2     // Use same button for both functions. 
+#define BUTTON7SEG PUSH2     // Use same button for both functions.
 #endif
 
 #if defined(__MSP430F5529__)
@@ -396,12 +396,12 @@ void loop() {
       prev_z_pos = z_pos;
       process_localdata();
       prevGarageMillis = millis();
-    } 
+    }
     // Next, check if the ZX sensor value changed more than the threshold since the last update
-    else 
+    else
     {
       // Unsigned data, so need to check which one is larger before subtracting
-      if (z_pos >= prev_z_pos) { 
+      if (z_pos >= prev_z_pos) {
         if ( (z_pos - prev_z_pos) > Z_POS_DIFF_THRESHOLD ) {
           prev_z_pos = z_pos;
           process_localdata();

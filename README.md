@@ -38,12 +38,12 @@ References
 + [LED744511][9] library
 + CC110L [BoosterPack][8]
 
-[1]: https://gitlab.com/Andy4495/Outdoor-Weather-Sensor
-[2]: https://gitlab.com/Andy4495/Sensor-Receiver
+[1]: https://github.com/Andy4495/Outdoor-Weather-Sensor
+[2]: https://github.com/Andy4495/Sensor-Receiver
 [3]: https://www.sparkfun.com/products/retired/12780
-[4]: https://gitlab.com/Andy4495/mspTandV
-[5]: https://gitlab.com/Andy4495/NewhavenOLED
-[6]: https://gitlab.com/Andy4495/NewhavenOLED
+[4]: https://github.com/Andy4495/mspTandV
+[5]: https://github.com/Andy4495/NewhavenOLED
+[6]: https://github.com/Andy4495/SWI2C
 [7]: https://www.sparkfun.com/products/13162
 [8]: http://www.ti.com/tool/430BOOST-CC110L
-[9]: https://gitlab.com/Andy4495/LED744511
+[9]: https://github.com/Andy4495/LED744511
