@@ -39,7 +39,7 @@ References
 + CC110L [BoosterPack][8]
 
 [1]: https://github.com/Andy4495/Outdoor-Weather-Sensor
-[2]: https://github.com/Andy4495/Sensor-Receiver
+[2]: https://github.com/Andy4495/Wireless-Sensor-Receiver-Hub
 [3]: https://www.sparkfun.com/products/retired/12780
 [4]: https://github.com/Andy4495/mspTandV
 [5]: https://github.com/Andy4495/NewhavenOLED
