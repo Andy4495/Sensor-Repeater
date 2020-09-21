@@ -22,9 +22,8 @@ External Libraries
 ------------------
 - [MSPTandV][4]
 - [NewhavenOLED][5]
+- [LED744511][9]
 - [SWI2C][6]
-
-
 
 References
 ----------
@@ -32,10 +31,6 @@ References
 + [Sensor Receiver Hub][2]
 + SparkFun [ZX Sensor][3]
   + Note that a [newer version][7] is available
-+ [MSPTandV][4] library
-+ [NewhavenOLED][5] library
-+ [SWI2C][6] library
-+ [LED744511][9] library
 + CC110L [BoosterPack][8]
 
 [1]: https://github.com/Andy4495/Outdoor-Weather-Sensor
