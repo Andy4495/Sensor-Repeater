@@ -15,6 +15,9 @@
 //                             That is, sensor packet will be sent out every GARAGE_MAX_TX_DELAY milliseconds
 //                             regardless of whether a separate door status message went out.
 //                             Also fix ZX difference calculation since it is unsigned value.
+// 1.9.0  09/23/2020  A.T.     Improve algorithm for checking ZX sensor:
+//                             - Check ZX on every loop (regardless whether Weather packet received)
+//                             - Threshold value is only updated by threshold check, not by timeout check
 
 
 
@@ -354,7 +357,7 @@ void loop() {
     switch (Packet.from) {
       case (ADDRESS_WEATHER):
         if (crcFailed == 0) {
-          process_weatherdata();
+          send_weatherdata();
           messageReceived = 1;     // Flag to display Antenna symbol on LCD
         }
         break;
@@ -381,52 +384,52 @@ void loop() {
     Packet.from = 0;         // "from" and "struct_type" filled in by received message
     Packet.struct_type = 0;  // Zero them out here just for completeness
     memset(Packet.message, 0, sizeof(Packet.message));
-  }
-  else {
 #ifdef SERIAL_ENABLED
     Serial.print(F("Nothing received: "));
     Serial.println(millis());
 #endif
-    // Check if time to send garage sensosr data
+  }  // end of check for Weather packet
+
+  // Now check the ZX Sensor
 #ifdef ZX_SENSOR_ENABLED
-    myZX.read1bFromRegister(ZPOS_REG, &z_pos);
+  myZX.read1bFromRegister(ZPOS_REG, &z_pos);
 #endif
-    // First see if we are due for a regular update
-    if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY ) {
-      prev_z_pos = z_pos;
-      process_localdata();
-      prevGarageMillis = millis();
-    }
-    // Next, check if the ZX sensor value changed more than the threshold since the last update
-    else
-    {
-      // Unsigned data, so need to check which one is larger before subtracting
-      if (z_pos >= prev_z_pos) {
-        if ( (z_pos - prev_z_pos) > Z_POS_DIFF_THRESHOLD ) {
-          prev_z_pos = z_pos;
-          process_localdata();
-        }
-      } else { // prev_z_pos is larger
-        if ( (prev_z_pos - z_pos) > Z_POS_DIFF_THRESHOLD ) {
-          prev_z_pos = z_pos;
-          process_localdata();
-        }
+  // First see if we are due for a regular update
+  if ((millis() - prevGarageMillis) > GARAGE_MAX_TX_DELAY ) {
+    send_localdata();
+    prevGarageMillis = millis();
+  }
+  // Next, check if the ZX sensor value changed more than the threshold since the last update
+  else
+  {
+    // Unsigned data, so need to check which one is larger before subtracting
+    if (z_pos >= prev_z_pos) {
+      if ( (z_pos - prev_z_pos) > Z_POS_DIFF_THRESHOLD ) {
+        prev_z_pos = z_pos;
+        send_localdata();
+      }
+    } else { // prev_z_pos is larger
+      if ( (prev_z_pos - z_pos) > Z_POS_DIFF_THRESHOLD ) {
+        prev_z_pos = z_pos;
+        send_localdata();
       }
     }
+  }
 #ifdef SERIAL_ENABLED
-    Serial.print("Door: ");
-    Serial.println(z_pos);
+  Serial.print("Door: ");
+  Serial.println(z_pos);
 #endif
 #ifdef LCD_ENABLED
-    display_on_LCD();
-    messageReceived = 0;   // Clear the flag so LCD antenna only stays on for one display cycle
-    if (current_display == ADDRESS_WEATHER) current_display = ADDRESS_REPEATER;
-    else current_display = ADDRESS_WEATHER;
+  display_on_LCD();
+  messageReceived = 0;   // Clear the flag so LCD antenna only stays on for one display cycle
+  if (current_display == ADDRESS_WEATHER) current_display = ADDRESS_REPEATER;
+  else current_display = ADDRESS_WEATHER;
 #endif
 #ifdef OLED_ENABLED
-    showStatusOnOled();
+  showStatusOnOled();
 #endif
-  }
+  // Done checking ZX sensor
+
 #ifdef LED_7SEG_ENABLED
   if (digitalRead(BUTTON7SEG) == LOW) {
     myLCD.clear();
@@ -452,7 +455,7 @@ void loop() {
 #endif
 }
 
-void process_weatherdata() {
+void send_weatherdata() {
 #ifdef RADIO_ENABLED
   // Repeat the weather transmission to the hub
   Radio.begin(ADDRESS_WEATHER, CHANNEL_1, POWER_MAX);
@@ -522,7 +525,7 @@ void process_weatherdata() {
 #endif
 }
 
-void process_localdata() {
+void send_localdata() {
   myTemp.read(CAL_ONLY);
   myVcc.read(CAL_ONLY);
 
@@ -531,8 +534,7 @@ void process_localdata() {
   mspmVsamples[currentSample] = myVcc.getVccCalibrated();
   currentSample++;
   if (currentSample >= NUMBER_OF_SAMPLES) currentSample = 0;
-  samplesTaken++;
-  if (samplesTaken > NUMBER_OF_SAMPLES) samplesTaken = NUMBER_OF_SAMPLES;
+  if (samplesTaken < NUMBER_OF_SAMPLES) samplesTaken++;
   mspTavg = 0;
   mspmVavg = 0;
   for (int i = 0; i < samplesTaken; i++) {

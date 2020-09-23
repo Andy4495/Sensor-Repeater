@@ -1,9 +1,9 @@
 Sensor Repeater
 ===============
 
-This is an Energia sketch for a wireless repeater station to improve signal quality on a remote sensor.
+This is an Energia sketch for a wireless repeater station running on an MSP430 controller to improve reception from a remote wireless sensor.
 
-This sketch uses a TI CC110L BoosterPack to listen for packets from an [outdoor weather sensor][1]. Since the sensor is outdoors and the [receiver hub][2] is indoors, the signal is often weak or garbled when it is received by the hub. So I created this repeater station and installed it about halfway between the weather sensor and the receiver hub.
+This sketch uses a TI CC110L BoosterPack to listen for packets from an [outdoor weather sensor][1]. Since the sensor is outdoors and the [receiver hub][2] is indoors, the signal from the weather sensor is often weak or garbled when it is received by the hub. So I created this repeater station and installed it about halfway between the weather sensor and the receiver hub.
 
 The weather sensor transmits on a channel that is monitored by the repeater hub, and the repeater station then re-transmits the packet on the channel that the receiver hub is listening.
 
