@@ -51,7 +51,7 @@
 #define SERIAL_ENABLED        // Disable serial to save program memory
 // #define SERIAL_ADDITIONAL_DEBUGGING // Disable this to save even more memory
 #define ZX_SENSOR_ENABLED
-// #define OLED_ENABLED
+//#define OLED_ENABLED
 #define RADIO_ENABLED
 #define LED_7SEG_ENABLED
 
@@ -676,7 +676,6 @@ void oledDisplay() {
 }
 
 void buildStatusString() {
-  int splen;
   unsigned long lastminutes;
 
   lastminutes = (millis() - prevWeatherMillis) / 1000 / 60;
@@ -691,7 +690,7 @@ void buildStatusString() {
   if (lastLQI > 99) lastLQI = 99;
   if (lastLQI < 0) lastLQI = 0;
   snprintf((char*)oled_text[0], OLED_COLS + 1, "+%7ld,-%6ld", totalValid, totalCRC);
-  snprintf((char*)oled_text[1], OLED_COLS + 1, "SS-%3d,Q%2d,dt:%2d", -lastRSSI, lastLQI, lastminutes);
+  snprintf((char*)oled_text[1], OLED_COLS + 1, "SS-%3d,Q%2d,dt:%2lu", -lastRSSI, lastLQI, lastminutes);
   oled_text[1][11] = 0x15;   // Replace 'd' with delta character (from ROM C character set)
 
 #ifdef SERIAL_ADDITIONAL_DEBUGGING
