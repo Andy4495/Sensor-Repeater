@@ -48,10 +48,10 @@
 #include <AIR430BoostFCC.h>
 #include "MspTandV.h"
 
-///
-///#define SERIAL_ENABLED        Disable serial to save program memory
+#define SERIAL_ENABLED        // Disable serial to save program memory
+// #define SERIAL_ADDITIONAL_DEBUGGING // Disable this to save even more memory
 #define ZX_SENSOR_ENABLED
-#define OLED_ENABLED
+// #define OLED_ENABLED
 #define RADIO_ENABLED
 #define LED_7SEG_ENABLED
 
@@ -138,10 +138,10 @@ int oledStatus = 0;
 #define SDA_PIN 10
 const uint8_t ZX_ADDR = 0x10;  // ZX Sensor I2C address
 const uint8_t ZPOS_REG = 0x0A;
-uint8_t z_pos = 0, prev_z_pos = 0;
 SWI2C myZX = SWI2C(SDA_PIN, SCL_PIN, ZX_ADDR);
 #endif
 #define Z_POS_DIFF_THRESHOLD 30
+uint8_t z_pos = 0, prev_z_pos = 0;
 
 #define CC110L_CS  18
 #define RF_GDO0    19
@@ -290,8 +290,6 @@ void setup() {
   Packet.struct_type = 0;  // Zero them out here just for completeness
   memset(Packet.message, 0, sizeof(Packet.message));
 
-  SPI.begin(CC110L_CS);
-
 #ifdef LCD_ENABLED
   myLCD.clear();
   myLCD.displayText(F("RX ON "));
@@ -317,14 +315,18 @@ void loop() {
   // The radio library uses the SPI library internally, this call initializes
   // SPI/CSn and GDO0 lines. Also setup initial address, channel, and TX power.
 #ifdef RADIO_ENABLED
+  Serial.println("Rx On");
   Radio.begin(ADDRESS_REMOTE, CHANNEL_4, POWER_MAX);
   packetSize = Radio.receiverOn((unsigned char*)&Packet, sizeof(Packet), 1000);
+  Serial.println("Rx Off");
+
   // Simulate a Radio.end() call, but don't want to disable Chip Select pin
   // Radio.end();
   while (Radio.busy()) ; // Empty loop statement
   detachInterrupt(RF_GDO0);
   digitalWrite(CC110L_CS, HIGH);
   pinMode(CC110L_CS, OUTPUT);    // Need to pull radio CS high to keep it off the SPI bus
+
 #endif
 
   if (packetSize > 0) {
@@ -333,7 +335,7 @@ void loop() {
 #ifndef LED_DISABLED
     digitalWrite(BOARD_LED, HIGH);
 #endif
-#ifdef SERIAL_ENABLED
+#ifdef SERIAL_ADDITIONAL_DEBUGGING
     Serial.print(F("RX from: "));
     Serial.print(Packet.from);
     Serial.print(F(", bytes: "));
@@ -347,7 +349,7 @@ void loop() {
       totalCRC++;
       crcFailed = 1;
 #ifdef SERIAL_ENABLED
-      Serial.println(F("*** CRC check failed! ***"));
+      Serial.println(F("CRC check failed"));
 #endif
     } else {
       totalValid++;
@@ -364,12 +366,12 @@ void loop() {
       case (ADDRESS_G2):
       case (ADDRESS_SENSOR4):
       case (ADDRESS_SENSOR5):
-#ifdef SERIAL_ENABLED
-        Serial.println(F("Message received from untracked sensor."));
+#ifdef SERIAL_ADDITIONAL_DEBUGGING
+        Serial.println(F("Untracked sensor."));
 #endif
         break;
       default:
-#ifdef SERIAL_ENABLED
+#ifdef SERIAL_ADDITIONAL_DEBUGGING
         Serial.println(F("Message received from unknown sensor."));
 #endif
         break;
@@ -384,6 +386,9 @@ void loop() {
     Packet.from = 0;         // "from" and "struct_type" filled in by received message
     Packet.struct_type = 0;  // Zero them out here just for completeness
     memset(Packet.message, 0, sizeof(Packet.message));
+  }
+  else
+  {
 #ifdef SERIAL_ENABLED
     Serial.print(F("Nothing received: "));
     Serial.println(millis());
@@ -469,7 +474,7 @@ void send_weatherdata() {
 #endif
   prevWeatherMillis = millis();
 
-#ifdef SERIAL_ENABLED
+#ifdef SERIAL_ADDITIONAL_DEBUGGING
   Serial.println("Received packet from WEATHER.");
   Serial.println(F("Temperature (F): "));
   Serial.print(F("    BME280:  "));
@@ -514,6 +519,7 @@ void send_weatherdata() {
   Serial.print(("Millis: "));
   Serial.println(Packet.weatherdata.Millis);
 #endif
+
   last_BME280_P = Packet.weatherdata.BME280_P;
   last_BME280_H = Packet.weatherdata.BME280_H;
   last_TMP107_Ti = Packet.weatherdata.TMP107_Ti;
@@ -565,7 +571,7 @@ void send_localdata() {
   pinMode(CC110L_CS, OUTPUT);    // Need to pull radio CS high to keep it off the SPI bus
 #endif
 
-#ifdef SERIAL_ENABLED
+#ifdef SERIAL_ADDITIONAL_DEBUGGING
   Serial.print("Local temp: ");
   Serial.println(Packet.sensordata.MSP_T);
   Serial.print("Local Vcc: ");
@@ -688,7 +694,7 @@ void buildStatusString() {
   snprintf((char*)oled_text[1], OLED_COLS + 1, "SS-%3d,Q%2d,dt:%2d", -lastRSSI, lastLQI, lastminutes);
   oled_text[1][11] = 0x15;   // Replace 'd' with delta character (from ROM C character set)
 
-#ifdef SERIAL_ENABLED
+#ifdef SERIAL_ADDITIONAL_DEBUGGING
   Serial.print("OLED Row 0: ");
   Serial.println((char*)oled_text[0]);
   Serial.print("OLED ROW 1: ");
