@@ -33,6 +33,10 @@ References
   + Note that a [newer version][7] is available
 + CC110L [BoosterPack][8]
 
+License
+-------
+The software and other files in this repository are released under what is commonly called the [MIT License][100]. See the file [`LICENSE`][101] in this repository.
+
 [1]: https://github.com/Andy4495/Outdoor-Weather-Sensor
 [2]: https://github.com/Andy4495/Wireless-Sensor-Receiver-Hub
 [3]: https://www.sparkfun.com/products/retired/12780
@@ -42,3 +46,5 @@ References
 [7]: https://www.sparkfun.com/products/13162
 [8]: http://www.ti.com/tool/430BOOST-CC110L
 [9]: https://github.com/Andy4495/LED744511
+[100]: https://choosealicense.com/licenses/mit/
+[101]: ./LICENSE
