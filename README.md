@@ -1,5 +1,4 @@
-Sensor Repeater
-===============
+# Sensor Repeater
 
 This is an Energia sketch for a wireless repeater station running on an MSP430 controller to improve reception from a remote wireless sensor.
 
@@ -8,6 +7,7 @@ This sketch uses a TI CC110L BoosterPack to listen for packets from an [outdoor 
 The weather sensor transmits on a channel that is monitored by the repeater hub, and the repeater station then re-transmits the packet on the channel that the receiver hub is listening.
 
 Since the repeater station is mounted in my garage, I also added some  monitoring of its own which it transmits separately:
+
 - Garage temperature (using the MSP430 internal temp sensor)
 - Garage door open/closed states (using a SparkFun [ZX Sensor][3])
 - Vcc (battery level)
@@ -18,23 +18,23 @@ The repeater station also supports an external 2-digit seven segment LED to disp
 
 In my implementation, the sketch is installed on an MSP430FR4133 LaunchPad.  On the FR4133, SPI and I2C share the same pins. Since the CC110L uses SPI communication and the ZX Sensor uses I2C, there is a pin conflict if both sensors try to use the built-in hardware communication.  The sketch therefore uses my [software I2C library][6] to communicate with the ZX Sensor.
 
-External Libraries
-------------------
+## External Libraries
+
 - [MSPTandV][4]
 - [NewhavenOLED][5]
 - [LED744511][9]
 - [SWI2C][6]
 
-References
-----------
-+ [Outdoor Weather Sensor][1]
-+ [Sensor Receiver Hub][2]
-+ SparkFun [ZX Sensor][3]
-  + Note that a [newer version][7] is available
-+ CC110L [BoosterPack][8]
+## References
 
-License
--------
+- [Outdoor Weather Sensor][1]
+- [Sensor Receiver Hub][2]
+- SparkFun [ZX Sensor][3]
+  - Note that a [newer version][7] is available
+- CC110L [BoosterPack][8]
+
+## License
+
 The software and other files in this repository are released under what is commonly called the [MIT License][100]. See the file [`LICENSE`][101] in this repository.
 
 [1]: https://github.com/Andy4495/Outdoor-Weather-Sensor
@@ -48,3 +48,4 @@ The software and other files in this repository are released under what is commo
 [9]: https://github.com/Andy4495/LED744511
 [100]: https://choosealicense.com/licenses/mit/
 [101]: ./LICENSE
+[200]: https://github.com/Andy4495/Sensor-Repeater
