@@ -47,8 +47,10 @@ The software and other files in this repository are released under what is commo
 [5]: https://github.com/Andy4495/NewhavenOLED
 [6]: https://github.com/Andy4495/SWI2C
 [7]: https://www.sparkfun.com/products/13162
-[8]: http://www.ti.com/tool/430BOOST-CC110L
+[8]: https://www.ti.com/lit/ml/swru312b/swru312b.pdf
 [9]: https://github.com/Andy4495/LED744511
 [100]: https://choosealicense.com/licenses/mit/
 [101]: ./LICENSE
 [200]: https://github.com/Andy4495/Sensor-Repeater
+
+[//]: # (Old TI product link that is no longer active: http://www.ti.com/tool/430BOOST-CC110L)

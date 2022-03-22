@@ -437,7 +437,9 @@ void loop() {
 
 #ifdef LED_7SEG_ENABLED
   if (digitalRead(BUTTON7SEG) == LOW) {
+#ifdef LCD_ENABLED
     myLCD.clear();
+#endif
     sevenSegEnabled = ~sevenSegEnabled;
     if (sevenSegEnabled)
     {
