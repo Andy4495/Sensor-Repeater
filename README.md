@@ -23,7 +23,7 @@ In my implementation, the sketch is installed on an MSP430FR4133 LaunchPad.  On 
 
 ## External Libraries
 
-- [MSPTandV][4]
+- [MspTandV][4]
 - [NewhavenOLED][5]
 - [LED744511][9]
 - [SWI2C][6]
@@ -43,7 +43,7 @@ The software and other files in this repository are released under what is commo
 [1]: https://github.com/Andy4495/Outdoor-Weather-Sensor
 [2]: https://github.com/Andy4495/Wireless-Sensor-Receiver-Hub
 [3]: https://www.sparkfun.com/products/retired/12780
-[4]: https://github.com/Andy4495/mspTandV
+[4]: https://github.com/Andy4495/MspTandV
 [5]: https://github.com/Andy4495/NewhavenOLED
 [6]: https://github.com/Andy4495/SWI2C
 [7]: https://www.sparkfun.com/products/13162
