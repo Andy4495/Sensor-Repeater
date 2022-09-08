@@ -51,6 +51,6 @@ The software and other files in this repository are released under what is commo
 [9]: https://github.com/Andy4495/LED744511
 [100]: https://choosealicense.com/licenses/mit/
 [101]: ./LICENSE
-[200]: https://github.com/Andy4495/Sensor-Repeater
+[//]: # ([200]: https://github.com/Andy4495/Sensor-Repeater)
 
 [//]: # (Old TI product link that is no longer active: http://www.ti.com/tool/430BOOST-CC110L)
