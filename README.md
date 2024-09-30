@@ -1,7 +1,7 @@
 # Sensor Repeater
 
 [![Arduino Compile Sketches](https://github.com/Andy4495/Sensor-Repeater/actions/workflows/arduino-compile-sketches.yml/badge.svg)](https://github.com/Andy4495/Sensor-Repeater/actions/workflows/arduino-compile-sketches.yml)
-[![Check Markdown Links](https://github.com/Andy4495/Sensor-Repeater/actions/workflows/CheckMarkdownLinks.yml/badge.svg)](https://github.com/Andy4495/Sensor-Repeater/actions/workflows/CheckMarkdownLinks.yml)
+[![Check Markdown Links](https://github.com/Andy4495/Sensor-Repeater/actions/workflows/check-links.yml/badge.svg)](https://github.com/Andy4495/Sensor-Repeater/actions/workflows/check-links.yml)
 
 This sketch is a wireless repeater station running on an MSP430 controller to improve reception from a remote wireless sensor.
 
