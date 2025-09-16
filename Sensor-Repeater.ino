@@ -46,7 +46,7 @@
 
 #include <SPI.h>
 #include <AIR430BoostFCC.h>
-#include "MspTandV.h"
+#include "MspTandV.h"         // https://github.com/Andy4495/MspTandV
 
 #define SERIAL_ENABLED        // Disable serial to save program memory
 // #define SERIAL_ADDITIONAL_DEBUGGING // Disable this to save even more memory
@@ -97,7 +97,7 @@
 #endif
 
 #ifdef LED_7SEG_ENABLED
-#include "LED744511.h"
+#include "LED744511.h"      // https://github.com/Andy4495/LED744511
 #define LED_MSB_LE   8
 #define LED_LSB_LE   6
 #define LED_BL      17
@@ -114,7 +114,7 @@ LCD_LAUNCHPAD myLCD;
 #endif
 
 #ifdef OLED_ENABLED
-#include "NewhavenOLED.h"
+#include "NewhavenOLED.h"               // https://github.com/Andy4495/NewhavenOLED
 const byte OLED_ROWS = 2;                 // Number of display rows
 const byte OLED_COLS = 16;             // Number of display columns
 const byte CS_PIN = 11;
@@ -133,7 +133,7 @@ int oledStatus = 0;
 #endif
 
 #ifdef ZX_SENSOR_ENABLED
-#include "SWI2C.h"
+#include "SWI2C.h"          // https://github.com/Andy4495/SWI2C
 #define SCL_PIN 9
 #define SDA_PIN 10
 const uint8_t ZX_ADDR = 0x10;  // ZX Sensor I2C address
